@@ -1,0 +1,15 @@
+package com.bamito;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+
+@SpringBootApplication
+@EnableJpaAuditing(auditorAwareRef = "auditorAware")
+public class BamitoApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(BamitoApplication.class, args);
+    }
+
+}

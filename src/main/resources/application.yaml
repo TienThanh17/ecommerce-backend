@@ -1,0 +1,57 @@
+server:
+  port: 9090
+  servlet:
+    context-path: /bamito/api/v1
+  tomcat:
+    relaxed-query-chars: [ '[', ']' , '{', '}' ]
+
+logging:
+  level:
+    org:
+      springframework:
+        security: DEBUG
+
+backend-url: http://localhost:9090/bamito/api/v1
+frontend-url: http://localhost:3000
+
+spring:
+  application:
+    name: bamito
+  datasource:
+    url: ${DBMS_URL}
+    username: ${DBMS_USERNAME}
+    password: ${DBMS_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: theboyhunter123@gmail.com
+    password: mzij cfov dzir nivg
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+cloudinary:
+  cloud-name: dqp3ftfyl
+  api-key: 487374548194363
+  api-secret: OUcROFd414cYzwzz3qq4a98l6bg
+
+jwt:
+  access-duration: 3600
+  access-key: sHXFnVUs48Vuo0tVUU1ulXJmpunJlrU13XXTMTv0bfIdAGgVlIT9m5NwnSwMzvDq
+  refresh-duration: 7200
+  refresh-key: YbxvZ7PoJgNFrNsD9b2gEDxI5nAqc+90sa7pBHIPTJNIvxCzw4Lpd+3nX1P4qp+/
+
+
+
