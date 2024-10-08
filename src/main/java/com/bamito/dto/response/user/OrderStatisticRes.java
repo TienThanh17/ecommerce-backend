@@ -1,25 +1,22 @@
 package com.bamito.dto.response.user;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class SetProductOrder {
+public class OrderStatisticRes {
+    String orderId;
     String productId;
-    String productName;
-    String categoryId;
-    String categoryName;
     String sizeId;
-    String sizeName;
-    String imageURL;
-    long price;
-    int discount;
     int quantity;
     long totalPrice;
-    String orderId;
-//    int feedbackStatus;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
+    LocalDateTime createAt;
 }

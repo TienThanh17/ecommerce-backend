@@ -6,6 +6,7 @@ import com.bamito.dto.response.ResponseObject;
 import com.bamito.dto.response.user.*;
 import com.bamito.entity.Role;
 import com.bamito.service.implement.UserServiceImpl;
+import jakarta.mail.MessagingException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -15,6 +16,8 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.view.RedirectView;
@@ -44,7 +47,7 @@ public class UserController {
 //    }
 
     @PostMapping("/register")
-    public ResponseObject<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseObject<UserResponse> register(@Valid @RequestBody RegisterRequest request) throws MessagingException {
         var result = userService.register(request);
         return ResponseObject.<UserResponse>builder()
                 .data(result)
@@ -84,13 +87,27 @@ public class UserController {
         return new RedirectView(FRONTEND_URL + "/login");
     }
 
-    @PutMapping("/regenerateOtp")
+    @PatchMapping("/regenerate-otp")
     public ResponseObject<?> regenerateOtp(@RequestParam("email") String email) {
         userService.regenerateOtp(email);
 
         return ResponseObject.builder().build();
     }
 
+    @PatchMapping("/send-otp")
+    public ResponseObject<?> sendOtp(@RequestParam("email") String email) throws MessagingException {
+        userService.sendOtp(email);
+        return ResponseObject.builder().build();
+    }
+
+    @PatchMapping("/forgot-password")
+    public ResponseObject<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        userService.forgotPassword(request);
+        return ResponseObject.builder().build();
+    }
+
+    @PostAuthorize("(returnObject.data.user.email == authentication.name) and " +
+            "hasRole('USER') or hasRole('ADMIN')")
     @GetMapping("/get-user-info")
     public ResponseObject<UserInfoResponse> getUserInfo(@RequestParam("email") String email) {
         var result = userService.getUserInfo(email);
@@ -100,7 +117,9 @@ public class UserController {
                 .build();
     }
 
-    @GetMapping("/get")
+    @PostAuthorize("(returnObject.data.email == authentication.name) and " +
+            "hasRole('USER') or hasRole('ADMIN')")
+    @GetMapping
     public ResponseObject<UserResponse> getUser(@RequestParam("id") long id) {
         var result = userService.getUser(id);
 
@@ -110,7 +129,7 @@ public class UserController {
     }
 
     // Trường hợp nhận JSON
-    @PatchMapping(path = "update", consumes = "application/json")
+    @PatchMapping(consumes = "application/json")
     public ResponseObject<UserResponse> updateUserJson(
             @RequestBody UpdateUserRequest request,
             @RequestParam("id") long id
@@ -123,7 +142,7 @@ public class UserController {
     }
 
     // Trường hợp nhận form-data
-    @PatchMapping(path = "update", consumes = "multipart/form-data")
+    @PatchMapping(consumes = "multipart/form-data")
     public ResponseObject<UserResponse> updateUserForm(
             @ModelAttribute UpdateUserRequest request,
             @RequestParam("id") long id
@@ -146,7 +165,7 @@ public class UserController {
                 .build();
     }
 
-    @DeleteMapping("/delete")
+    @DeleteMapping
     public ResponseObject<?> deleteUser(@RequestParam(name = "id") long id) {
         userService.deleteUser(id);
 
@@ -162,7 +181,7 @@ public class UserController {
                 .build();
     }
 
-    @PostMapping("/create")
+    @PostMapping
     public ResponseObject<?> createUser(@Valid @RequestBody CreateUserRequest request) {
         userService.createUser(request);
         return ResponseObject.builder().build();
@@ -173,5 +192,4 @@ public class UserController {
         userService.changePassword(request);
         return ResponseObject.builder().build();
     }
-
 }

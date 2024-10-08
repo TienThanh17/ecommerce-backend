@@ -9,7 +9,7 @@ import org.springframework.http.HttpStatusCode;
 @AllArgsConstructor
 public enum ErrorCode {
     UNCATEGORIZED_EXCEPTION(999, "uncategorized error", HttpStatus.INTERNAL_SERVER_ERROR),
-    UNAUTHENTICATED(401, "unauthenticated", HttpStatus.UNAUTHORIZED),
+    UNAUTHENTICATED(-4, "unauthenticated", HttpStatus.UNAUTHORIZED),
     UNAUTHORIZED(403, "you don't have permission", HttpStatus.FORBIDDEN),
     CAN_NOT_SEND_OTP(1, "can't send otp to email", HttpStatus.INTERNAL_SERVER_ERROR),
     ACCOUNT_EXISTED(2, "email existed", HttpStatus.BAD_REQUEST),
@@ -43,6 +43,10 @@ public enum ErrorCode {
     ORDER_NOT_EXISTED(30, "order doesn't exist", HttpStatus.BAD_REQUEST),
     ORDER_DETAIL_NOT_EXISTED(31, "order detail doesn't exist", HttpStatus.BAD_REQUEST),
     FEEDBACK_NOT_EXISTED(32, "feedback doesn't exist", HttpStatus.BAD_REQUEST),
+    TOKEN_EXPIRED(33, "token expired", HttpStatus.BAD_REQUEST),
+    INVALID_TOKEN(34, "invalid token", HttpStatus.BAD_REQUEST),
+    INVALID_OTP(35, "invalid otp", HttpStatus.BAD_REQUEST),
+    EXPIRY_OTP(36, "otp is expired", HttpStatus.BAD_REQUEST),
     ;
 
     private final int code;

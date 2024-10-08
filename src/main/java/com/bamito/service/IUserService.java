@@ -21,5 +21,7 @@ public interface IUserService {
     Set<RoleResponse> getAllRole();
     void createUser(CreateUserRequest request);
     void changePassword(ChangePasswordRequest request);
+    void forgotPassword(ForgotPasswordRequest request);
+    void sendOtp(String email) throws MessagingException;
 }
 

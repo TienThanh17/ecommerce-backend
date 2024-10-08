@@ -3,14 +3,18 @@ package com.bamito.service.implement;
 import com.bamito.dto.request.user.CancelOrderRequest;
 import com.bamito.dto.request.user.OrderRequest;
 import com.bamito.dto.response.PaginationResponse;
+import com.bamito.dto.response.product.ReportProductRes;
+import com.bamito.dto.response.product.StatisticResponse;
 import com.bamito.dto.response.user.OrderDetailResponse;
 import com.bamito.dto.response.user.OrderResponse;
+import com.bamito.dto.response.user.OrderStatisticRes;
 import com.bamito.dto.response.user.SetProductOrder;
 import com.bamito.entity.*;
 import com.bamito.exception.CustomizedException;
 import com.bamito.exception.ErrorCode;
 import com.bamito.mapper.IOrderMapper;
 import com.bamito.repository.*;
+import com.bamito.service.IFeedbackService;
 import com.bamito.service.IOrderService;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
@@ -22,6 +26,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -38,6 +46,7 @@ public class OrderServiceImpl implements IOrderService {
     IPaymentRepository paymentRepository;
     ICartDetailRepository cartDetailRepository;
     IProductSizeRepos productSizeRepository;
+    IFeedbackRepository feedbackRepository;
     IOrderMapper orderMapper;
 
     @Override
@@ -45,6 +54,7 @@ public class OrderServiceImpl implements IOrderService {
         Set<Order> orders = orderRepository.findAllByUserId(userId);
 
         return orders.parallelStream()
+                .filter(order -> order.getStatus() == 3)
                 .flatMap(order -> {
                     Set<OrderDetail> orderDetails = orderDetailsRepos
                             .findAllByOrderIdAndFeedbackStatus(order.getId(), 0);
@@ -62,6 +72,76 @@ public class OrderServiceImpl implements IOrderService {
                             .totalPrice(o.getTotalPrice())
                             .build());
                 }).collect(Collectors.toSet());
+    }
+
+    @Override
+    public StatisticResponse getStatistic() {
+        Set<String> orderIds = orderRepository.findAllOrderIdByStatus(3);
+        Set<OrderStatisticRes> orderStatisticResSet = orderIds.parallelStream()
+                .flatMap(order -> {
+                    Set<OrderDetail> orderDetail = orderDetailsRepos.findAllByOrderId(order);
+                    return orderDetail.stream().map(o -> OrderStatisticRes.builder()
+                            .orderId(o.getOrder().getId())
+                            .productId(o.getProduct().getProductId())
+                            .sizeId(o.getSize().getSizeId())
+                            .quantity(o.getQuantity())
+                            .totalPrice(o.getTotalPrice())
+                            .createAt(o.getCreateDate())
+                            .build());
+                }).collect(Collectors.toSet());
+        long totalRevenue = orderStatisticResSet.stream().map(OrderStatisticRes::getTotalPrice).reduce(0L, Long::sum);
+        long totalOrders = orderRepository.count();
+        long totalProducts = productSizeRepository.count();
+        int totalWaitingOrder = orderRepository.countByStatus(1);
+        int totalDeliveryOrder = orderRepository.countByStatus(2);
+        int totalSuccessOrder = orderRepository.countByStatus(3);
+        int totalCancelOrder = orderRepository.countByStatus(0);
+        Set<Map<String, Object>> ordersByType = new HashSet<>();
+        ordersByType.add(Map.of("label", "Chờ xác nhận", "quantity", totalWaitingOrder));
+        ordersByType.add(Map.of("label", "Đang giao", "quantity", totalDeliveryOrder));
+        ordersByType.add(Map.of("label", "Hoàn tất", "quantity", totalSuccessOrder));
+        ordersByType.add(Map.of("label", "Đã hủy", "quantity", totalCancelOrder));
+
+        return StatisticResponse.builder()
+                .orderStatisticResSet(orderStatisticResSet)
+                .totalRevenue(totalRevenue)
+                .totalProducts(totalProducts)
+                .totalOrders(totalOrders)
+                .ordersByType(ordersByType)
+                .build();
+    }
+
+    @Override
+    public PaginationResponse<ReportProductRes> getAllProductReport(int page, int size, String startDate, String endDate) {
+        long timestamp = Long.parseLong(startDate);
+        Instant instant = Instant.ofEpochMilli(timestamp);
+        ZoneId zoneId = ZoneId.systemDefault();
+        LocalDateTime localDate = instant.atZone(zoneId).toLocalDateTime();
+
+        long timestamp2 = Long.parseLong(endDate);
+        Instant instant2 = Instant.ofEpochMilli(timestamp2);
+        LocalDateTime localDate2 = instant2.atZone(zoneId).toLocalDateTime();
+
+        Set<String> orderIds = orderRepository.findAllOrderIdByStatus(3);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<OrderDetail> orderDetailPage = orderDetailsRepos.findAllByOrderIdsAndTime(orderIds, localDate, localDate2, pageable);
+        List<ReportProductRes> reportProductResList = orderDetailPage.getContent().stream().map(od ->
+                        ReportProductRes.builder()
+                                .productName(od.getProduct().getProductName())
+                                .sizeName(od.getSize().getSizeName())
+                                .price(od.getProduct().getPrice())
+                                .discount(od.getProduct().getDiscount())
+                                .quantity(od.getQuantity())
+                                .totalPrice(od.getTotalPrice())
+                                .createDate(od.getCreateDate().toLocalDate())
+                                .build()).toList();
+        return PaginationResponse.<ReportProductRes>builder()
+                .content(reportProductResList)
+                .page(orderDetailPage.getNumber())
+                .size(orderDetailPage.getSize())
+                .totalElements(orderDetailPage.getTotalElements())
+                .totalPage(orderDetailPage.getTotalPages())
+                .build();
     }
 
     @Transactional(rollbackOn = Throwable.class)
@@ -137,6 +217,8 @@ public class OrderServiceImpl implements IOrderService {
             return SetProductOrder.builder()
                     .productId(product.getProduct().getProductId())
                     .productName(product.getProduct().getProductName())
+                    .categoryId(product.getProduct().getProductCategory().getCategoryId())
+                    .categoryName(product.getProduct().getProductCategory().getCategoryName())
                     .sizeId(product.getSize().getSizeId())
                     .sizeName(product.getSize().getSizeName())
                     .price(product.getProduct().getPrice())
@@ -216,6 +298,13 @@ public class OrderServiceImpl implements IOrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new CustomizedException(ErrorCode.ORDER_NOT_EXISTED));
         order.setStatus(3);
+        Set<OrderDetail> orderDetails = orderDetailsRepos.findAllByOrderId(order.getId());
+        for (OrderDetail od : orderDetails) {
+            ProductSize productSize = productSizeRepository
+                    .findByProductProductIdAndSizeSizeId(od.getProduct().getProductId(), od.getSize().getSizeId());
+            productSize.setSold(productSize.getSold() + od.getQuantity());
+            productSizeRepository.save(productSize);
+        }
         orderRepository.save(order);
     }
 }

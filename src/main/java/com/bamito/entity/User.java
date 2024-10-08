@@ -49,7 +49,7 @@ public class User extends Auditable {
     )
     Set<Product> favoriteProducts = new HashSet<>();
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE)
     Set<Address> addresses;
 
     @OneToMany(mappedBy = "user")

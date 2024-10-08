@@ -43,7 +43,6 @@ public class UserServiceImpl implements IUserService {
     IUserRepository userRepository;
     IAddressRepository addressRepository;
     IRoleRepository roleRepository;
-    IProductRepository productRepository;
     IUserMapper userMapper;
     PasswordEncoder passwordEncoder;
     EmailUtil emailUtil;
@@ -89,7 +88,7 @@ public class UserServiceImpl implements IUserService {
             UUID otp = UUID.randomUUID();
             user.setOtpCode(otp.toString());
             user.setOtpExpiry(LocalDateTime.now().plusYears(1));
-            emailUtil.sendOtpEmail(request.getEmail(), otp.toString());
+            emailUtil.sendLinkAuthenticateEmail(request.getEmail(), otp.toString());
         } catch (MessagingException ex) {
             throw new RuntimeException(ex);
         }
@@ -114,7 +113,30 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public UserResponse register(RegisterRequest request) {
+    public void forgotPassword(ForgotPasswordRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new CustomizedException(ErrorCode.ACCOUNT_NOT_EXISTED));
+        if (!Objects.equals(user.getOtpCode(), request.getOtp()))
+            throw new CustomizedException(ErrorCode.INVALID_OTP);
+        if (user.getOtpExpiry().isBefore(LocalDateTime.now()))
+            throw new CustomizedException(ErrorCode.EXPIRY_OTP);
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        userRepository.save(user);
+    }
+
+    @Override
+    public void sendOtp(String email) throws MessagingException {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomizedException(ErrorCode.ACCOUNT_NOT_EXISTED));
+        String otp = UUID.randomUUID().toString().substring(0, 8);
+        user.setOtpCode(otp);
+        user.setOtpExpiry(LocalDateTime.now().plusMinutes(3));
+        userRepository.save(user);
+        emailUtil.sendOtpResetPassword(user.getEmail(), user.getUsername(), user.getOtpCode());
+    }
+
+    @Override
+    public UserResponse register(RegisterRequest request) throws MessagingException {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new CustomizedException(ErrorCode.ACCOUNT_EXISTED);
         }
@@ -127,13 +149,10 @@ public class UserServiceImpl implements IUserService {
         user.setOtpExpiry(LocalDateTime.now().plusMinutes(3));
 
         Optional<Role> role = roleRepository.findById(RoleEnum.USER.toString());
-        role.ifPresent(userRole -> user.setRole(userRole));
+        role.ifPresent(user::setRole);
 
-        try {
-            emailUtil.sendOtpEmail(request.getEmail(), otp.toString());
-        } catch (MessagingException ex) {
-            throw new RuntimeException(ex);
-        }
+        emailUtil.sendLinkAuthenticateEmail(request.getEmail(), otp.toString());
+
         userRepository.save(user);
 
         UserResponse userResponse = userMapper.toDto(user);
@@ -160,7 +179,7 @@ public class UserServiceImpl implements IUserService {
                 .orElseThrow(() -> new CustomizedException(ErrorCode.ACCOUNT_NOT_EXISTED));
         String otp = UUID.randomUUID().toString();
         try {
-            emailUtil.sendOtpEmail(email, otp);
+            emailUtil.sendLinkAuthenticateEmail(email, otp);
         } catch (MessagingException ex) {
             throw new RuntimeException(ex);
         }
@@ -265,7 +284,7 @@ public class UserServiceImpl implements IUserService {
                 UUID otp = UUID.randomUUID();
                 user.setOtpCode(otp.toString());
                 user.setOtpExpiry(LocalDateTime.now().plusYears(1));
-                emailUtil.sendOtpEmail(request.getEmail(), otp.toString());
+                emailUtil.sendLinkAuthenticateEmail(request.getEmail(), otp.toString());
             } catch (MessagingException ex) {
                 throw new RuntimeException(ex);
             }

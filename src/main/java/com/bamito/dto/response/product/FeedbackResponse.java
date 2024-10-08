@@ -15,6 +15,7 @@ public class FeedbackResponse {
     String email;
     String avatarURL;
     String productId;
+    String sizeName;
     String description;
     int rating;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:mm:ss")

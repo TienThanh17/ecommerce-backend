@@ -59,34 +59,36 @@ public class CartServiceImpl implements ICartService {
         Set<Product> products = productRepository.findAllByCart(cart.getId());
         Set<Size> sizes = sizeRepository.findAllByCart(cart.getId());
 
-        Map<String, Size> sizeMap = sizes.stream()
-                .collect(Collectors.toMap(size -> size.getProductCategory().getCategoryId(), size -> size));
+        Map<String, List<Size>> sizeMap = sizes.stream()
+                .collect(Collectors.groupingBy(size -> size.getProductCategory().getCategoryId()));
 
         Set<ProductCartResponse> productCartResponses = products.stream()
                 .filter(product -> sizeMap.containsKey(product.getProductCategory().getCategoryId())) // Lọc product có size tương ứng
-                .map(product -> {
-                    Size size = sizeMap.get(product.getProductCategory().getCategoryId());
+                .flatMap(product -> {
+                    List<Size> sizesForCategory = sizeMap.get(product.getProductCategory().getCategoryId());
 
-                    CartDetailKey id = new CartDetailKey(cart.getId(), product.getId(), size.getId());
-                    CartDetail cartDetail = cartDetailRepository.findById(id)
-                            .orElseThrow(() -> new CustomizedException(ErrorCode.CART_DETAIL_NOT_EXISTED));
+                    return sizesForCategory.stream().map(size -> {
+                        CartDetailKey id = new CartDetailKey(cart.getId(), product.getId(), size.getId());
+                        CartDetail cartDetail = cartDetailRepository.findById(id)
+                                .orElseThrow(() -> new CustomizedException(ErrorCode.CART_DETAIL_NOT_EXISTED));
 
-                    int quantityInStock = productSizeRepository.findQuantityBySizeId(size.getId());
+                        int quantityInStock = productSizeRepository.findQuantityBySizeId(size.getId(), product.getId());
 
-                    return ProductCartResponse.builder()
-                            .productId(product.getProductId())
-                            .productName(product.getProductName())
-                            .categoryId(product.getProductCategory().getCategoryId())
-                            .categoryName(product.getProductCategory().getCategoryName())
-                            .sizeId(size.getSizeId())
-                            .sizeName(size.getSizeName())
-                            .discount(product.getDiscount())
-                            .price(product.getPrice())
-                            .imageURL(product.getImageURL())
-                            .quantity(cartDetail.getQuantity())
-                            .totalPrice(cartDetail.getTotalPrice())
-                            .quantityInStock(quantityInStock)
-                            .build();
+                        return ProductCartResponse.builder()
+                                .productId(product.getProductId())
+                                .productName(product.getProductName())
+                                .categoryId(product.getProductCategory().getCategoryId())
+                                .categoryName(product.getProductCategory().getCategoryName())
+                                .sizeId(size.getSizeId())
+                                .sizeName(size.getSizeName())
+                                .discount(product.getDiscount())
+                                .price(product.getPrice())
+                                .imageURL(product.getImageURL())
+                                .quantity(cartDetail.getQuantity())
+                                .totalPrice(cartDetail.getTotalPrice())
+                                .quantityInStock(quantityInStock)
+                                .build();
+                    });
                 })
                 .collect(Collectors.toSet());
 

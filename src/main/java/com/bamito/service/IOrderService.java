@@ -3,6 +3,8 @@ package com.bamito.service;
 import com.bamito.dto.request.user.CancelOrderRequest;
 import com.bamito.dto.request.user.OrderRequest;
 import com.bamito.dto.response.PaginationResponse;
+import com.bamito.dto.response.product.ReportProductRes;
+import com.bamito.dto.response.product.StatisticResponse;
 import com.bamito.dto.response.user.OrderDetailResponse;
 import com.bamito.dto.response.user.OrderResponse;
 import com.bamito.dto.response.user.SetProductOrder;
@@ -21,4 +23,6 @@ public interface IOrderService {
     void deliverOrder(String orderId);
     void successOrder(String orderId);
     Set<SetProductOrder> getAllProductFeedback(long userId);
+    StatisticResponse getStatistic();
+    PaginationResponse<ReportProductRes> getAllProductReport(int page, int size, String startDate, String endDate);
 }

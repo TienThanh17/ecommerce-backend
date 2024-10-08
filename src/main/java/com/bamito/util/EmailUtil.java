@@ -4,14 +4,10 @@ import jakarta.annotation.PostConstruct;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.UtilityClass;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @RequiredArgsConstructor
 @Component
 public class EmailUtil {
@@ -19,17 +15,39 @@ public class EmailUtil {
 //    @Value("${backend-url}")
 //    private String BACK_END_URL;
 
-    public void sendOtpEmail(String email, String otp) throws MessagingException {
+    public void sendLinkAuthenticateEmail(String email, String otp) throws MessagingException {
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
         MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage);
         mimeMessageHelper.setTo(email);
         mimeMessageHelper.setSubject("Verify OTP");
-        mimeMessageHelper.setText(html(email, otp), true);
+        mimeMessageHelper.setText(HtmlAuthenticate(email, otp), true);
 
         javaMailSender.send(mimeMessage);
     }
 
-    private String html(String email, String otp) {
+    public void sendOtpResetPassword(String email, String username, String otp) throws MessagingException {
+        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+        MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, "UTF-8");
+
+        mimeMessageHelper.setTo(email);
+        mimeMessageHelper.setSubject("Mã xác thực đổi mật khẩu");
+        mimeMessageHelper.setText(HtmlResetPassword(otp, username), true);
+
+        javaMailSender.send(mimeMessage);
+    }
+
+    private String HtmlResetPassword(String otp, String username) {
+        return """
+            <h1>Xin chào %s</h1>
+            <p>Mã xác nhận của bạn là:
+                <span style="font-weight: 700;"> %s </span>\s
+            </p>
+            <p>Lưu ý: Yêu cầu này này chỉ có hiệu lực trong 3 phút.</p>
+           \s""".formatted(username, otp);
+    }
+
+
+    private String HtmlAuthenticate(String email, String otp) {
         String verifyEmailPath = "http://localhost:9090/bamito/api/v1/user/verify-email";
 
         return """

@@ -1,25 +1,21 @@
-package com.bamito.dto.response.user;
+package com.bamito.dto.response.product;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+
+import java.time.LocalDate;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class SetProductOrder {
-    String productId;
+public class ReportProductRes {
     String productName;
-    String categoryId;
-    String categoryName;
-    String sizeId;
     String sizeName;
-    String imageURL;
     long price;
     int discount;
     int quantity;
     long totalPrice;
-    String orderId;
-//    int feedbackStatus;
+    LocalDate createDate;
 }

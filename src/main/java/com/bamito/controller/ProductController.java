@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -37,6 +38,14 @@ public class ProductController {
             throws IOException {
         productService.createProduct(request);
         return new ResponseObject<>();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseObject<ProductResponse> getProduct(@PathVariable String id) {
+        var result = productService.getProduct(id);
+        return ResponseObject.<ProductResponse>builder()
+                .data(result)
+                .build();
     }
 
     @GetMapping
@@ -133,13 +142,5 @@ public class ProductController {
     public ResponseObject<?> deleteBrand(@PathVariable int id) throws IOException {
         productService.deleteProduct(id);
         return new ResponseObject<>();
-    }
-
-    @GetMapping("/{id}")
-    public ResponseObject<ProductResponse> getProduct(@PathVariable String id) {
-        var result = productService.getProduct(id);
-        return ResponseObject.<ProductResponse>builder()
-                .data(result)
-                .build();
     }
 }

@@ -8,9 +8,9 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class RegisterRequest {
-    @NotBlank
+    @NotBlank(message = "Invalid username")
     String username;
-    @NotBlank
+    @NotBlank(message = "Invalid password")
     String password;
     @NotBlank(message = "Invalid email")
     String email;

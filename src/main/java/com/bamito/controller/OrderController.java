@@ -4,6 +4,8 @@ import com.bamito.dto.request.user.CancelOrderRequest;
 import com.bamito.dto.request.user.OrderRequest;
 import com.bamito.dto.response.PaginationResponse;
 import com.bamito.dto.response.ResponseObject;
+import com.bamito.dto.response.product.ReportProductRes;
+import com.bamito.dto.response.product.StatisticResponse;
 import com.bamito.dto.response.user.OrderDetailResponse;
 import com.bamito.dto.response.user.OrderResponse;
 import com.bamito.dto.response.user.SetProductOrder;
@@ -59,7 +61,7 @@ public class OrderController {
     }
 
     @GetMapping("get-by-status")
-    public ResponseObject<PaginationResponse<OrderResponse>> getAllByUser
+    public ResponseObject<PaginationResponse<OrderResponse>> getAllByStatus
             (
                     @RequestParam(value = "page", defaultValue = "0", required = false) int page,
                     @RequestParam(value = "size", defaultValue = "10", required = false) int size,
@@ -69,6 +71,21 @@ public class OrderController {
         var result = orderService.getAllOrdersByStatus(page, size, sort, status);
 
         return ResponseObject.<PaginationResponse<OrderResponse>>builder()
+                .data(result)
+                .build();
+    }
+
+    @GetMapping("get-product-report")
+    public ResponseObject<PaginationResponse<ReportProductRes>> getAllProductReport
+            (
+                    @RequestParam(value = "page", defaultValue = "0", required = false) int page,
+                    @RequestParam(value = "size", defaultValue = "10", required = false) int size,
+                    @RequestParam(value = "startTime") String startTime,
+                    @RequestParam(value = "endTime") String endTime
+            ) {
+        var result = orderService.getAllProductReport(page, size, startTime, endTime);
+
+        return ResponseObject.<PaginationResponse<ReportProductRes>>builder()
                 .data(result)
                 .build();
     }
@@ -110,4 +127,12 @@ public class OrderController {
         return ResponseObject.builder().build();
     }
 
+    @GetMapping("get-statistic")
+    public ResponseObject<StatisticResponse> getStatistic() {
+        var result = orderService.getStatistic();
+
+        return ResponseObject.<StatisticResponse>builder()
+                .data(result)
+                .build();
+    }
 }

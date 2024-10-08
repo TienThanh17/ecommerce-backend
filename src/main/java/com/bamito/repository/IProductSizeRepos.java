@@ -19,6 +19,6 @@ public interface IProductSizeRepos extends JpaRepository<ProductSize, ProductSiz
 
     ProductSize findByProductProductIdAndSizeSizeId(String productId, String sizeId);
 
-    @Query("SELECT ps.quantity FROM ProductSize ps WHERE ps.size.id = ?1")
-    Integer findQuantityBySizeId(int sizeId);
+    @Query("SELECT ps.quantity FROM ProductSize ps WHERE ps.size.id = ?1 and ps.product.id = ?2")
+    Integer findQuantityBySizeId(int sizeId, int productId);
 }

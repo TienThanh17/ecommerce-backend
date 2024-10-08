@@ -22,7 +22,7 @@ public class SizeController {
     ISizeService sizeService;
 
     @PostMapping
-    public ResponseObject<?> createBrand(@Valid @RequestBody SizeRequest request) {
+    public ResponseObject<?> createSize(@Valid @RequestBody SizeRequest request) {
         sizeService.createSize(request);
         return new ResponseObject<>();
     }
